@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { connectorsAPI } from '../utils/api';
-import { Plus, Trash2, Edit, Activity, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Edit, Activity, RefreshCw, Wrench, Plug } from 'lucide-react';
 
 const categoryColors = {
   inventory: 'bg-blue-100 text-blue-800',
@@ -25,6 +25,9 @@ export default function Connectors() {
   const [connectors, setConnectors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [testingId, setTestingId] = useState(null);
+  const [refreshingId, setRefreshingId] = useState(null);
+  const [testResults, setTestResults] = useState({});
 
   useEffect(() => {
     loadConnectors();
@@ -58,13 +61,29 @@ export default function Connectors() {
 
   const handleTest = async (id) => {
     try {
-      await connectorsAPI.test(id);
-      alert('Prueba de conexión iniciada');
-      // Recargar después de unos segundos
-      setTimeout(loadConnectors, 3000);
+      setTestingId(id);
+      setTestResults(prev => ({ ...prev, [id]: null }));
+      const res = await connectorsAPI.test(id);
+      const data = res.data;
+      setTestResults(prev => ({ ...prev, [id]: data }));
+      // Recargar lista para reflejar nuevo status y tools
+      await loadConnectors();
     } catch (err) {
-      alert('Error al probar la conexión');
-      console.error('Error testing connector:', err);
+      setTestResults(prev => ({ ...prev, [id]: { success: false, message: 'Error al probar la conexión' } }));
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  const handleRefreshTools = async (id) => {
+    try {
+      setRefreshingId(id);
+      await connectorsAPI.refreshTools(id);
+      await loadConnectors();
+    } catch (err) {
+      console.error('Error refreshing tools:', err);
+    } finally {
+      setRefreshingId(null);
     }
   };
 
@@ -149,34 +168,71 @@ export default function Connectors() {
                 </p>
               )}
 
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+              <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
                 <Activity size={16} />
                 <span>
-                  {connector.toolsCache?.length || 0} herramientas disponibles
+                  {connector.toolsCache?.length || 0} herramientas
                 </span>
+                {connector.toolsCache?.length > 0 && (
+                  <span className="ml-auto bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                    {connector.toolsCache.length}
+                  </span>
+                )}
               </div>
 
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                <span className="text-xs">
-                  Tipo: {connector.connection.type}
-                </span>
-              </div>
+              {/* Herramientas descubiertas — lista compacta */}
+              {connector.toolsCache?.length > 0 && (
+                <div className="mb-3 p-2 bg-gray-50 rounded-lg max-h-24 overflow-y-auto">
+                  {connector.toolsCache.slice(0, 5).map(tool => (
+                    <div key={tool.name} className="flex items-center gap-1 py-0.5">
+                      <Wrench size={12} className="text-gray-400 flex-shrink-0" />
+                      <span className="text-xs text-gray-600 truncate" title={tool.description}>{tool.name}</span>
+                    </div>
+                  ))}
+                  {connector.toolsCache.length > 5 && (
+                    <span className="text-xs text-gray-400">+{connector.toolsCache.length - 5} más...</span>
+                  )}
+                </div>
+              )}
+
+              {/* Resultado del test */}
+              {testResults[connector._id] && (
+                <div className={`mb-3 text-xs px-3 py-2 rounded-lg ${
+                  testResults[connector._id].success
+                    ? 'bg-green-50 text-green-700'
+                    : 'bg-red-50 text-red-700'
+                }`}>
+                  {testResults[connector._id].message}
+                  {testResults[connector._id].latencyMs && (
+                    <span className="ml-2 opacity-70">{testResults[connector._id].latencyMs}ms</span>
+                  )}
+                </div>
+              )}
 
               <div className="flex gap-2">
                 <button
                   onClick={() => handleTest(connector._id)}
-                  className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 flex items-center justify-center gap-2 text-sm"
-                  title="Probar conexión"
+                  disabled={testingId === connector._id}
+                  className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Probar conexión y descubrir herramientas"
                 >
-                  <RefreshCw size={16} />
-                  Probar
+                  <RefreshCw size={16} className={testingId === connector._id ? 'animate-spin' : ''} />
+                  {testingId === connector._id ? 'Probando...' : 'Probar'}
+                </button>
+                <button
+                  onClick={() => handleRefreshTools(connector._id)}
+                  disabled={refreshingId === connector._id || connector.status !== 'active'}
+                  className="px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Actualizar herramientas"
+                >
+                  <Wrench size={16} className={refreshingId === connector._id ? 'animate-spin' : ''} />
                 </button>
                 <button
                   onClick={() => navigate(`/connectors/${connector._id}/edit`)}
-                  className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm"
+                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  title="Editar"
                 >
                   <Edit size={16} />
-                  Editar
                 </button>
                 <button
                   onClick={() => handleDelete(connector._id, connector.name)}
