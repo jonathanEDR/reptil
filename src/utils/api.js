@@ -9,9 +9,17 @@ const api = axios.create({
   },
 });
 
+// Guard para evitar registrar el interceptor más de una vez
+let authInterceptorId = null;
+
 // Interceptor para agregar el token de autenticación
 export const setAuthToken = (getToken) => {
-  api.interceptors.request.use(
+  // Si ya hay un interceptor registrado, eliminarlo primero
+  if (authInterceptorId !== null) {
+    api.interceptors.request.eject(authInterceptorId);
+  }
+
+  authInterceptorId = api.interceptors.request.use(
     async (config) => {
       try {
         const token = await getToken();
@@ -20,13 +28,10 @@ export const setAuthToken = (getToken) => {
         }
         return config;
       } catch (error) {
-        console.error('Error getting auth token:', error);
         return config;
       }
     },
-    (error) => {
-      return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
   );
 };
 

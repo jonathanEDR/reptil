@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '@clerk/clerk-react';
-import { connectorsAPI, setAuthToken } from '../utils/api';
+import { connectorsAPI } from '../utils/api';
 import { ArrowLeft, Save } from 'lucide-react';
 
 const categories = [
@@ -29,7 +28,6 @@ const authTypes = [
 export default function ConnectorForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getToken } = useAuth();
   const isEditing = Boolean(id);
 
   const [loading, setLoading] = useState(isEditing);
@@ -54,7 +52,6 @@ export default function ConnectorForm() {
   });
 
   useEffect(() => {
-    setAuthToken(getToken);
     if (isEditing) {
       loadConnector();
     }

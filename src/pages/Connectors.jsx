@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
-import { connectorsAPI, setAuthToken } from '../utils/api';
+import { connectorsAPI } from '../utils/api';
 import { Plus, Trash2, Edit, Activity, RefreshCw } from 'lucide-react';
 
 const categoryColors = {
@@ -22,14 +21,12 @@ const statusColors = {
 };
 
 export default function Connectors() {
-  const { getToken } = useAuth();
   const navigate = useNavigate();
   const [connectors, setConnectors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setAuthToken(getToken);
     loadConnectors();
   }, []);
 
