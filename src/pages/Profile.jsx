@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import api from '../utils/api';
+import Avatar from '../components/ui/Avatar';
 
 export default function Profile() {
   const { user } = useUser();
@@ -85,10 +86,10 @@ export default function Profile() {
       <div className="card p-6">
         <div className="flex items-start space-x-6">
           <div className="flex-shrink-0">
-            <img
-              src={profile?.avatarUrl || user?.imageUrl || '/default-avatar.png'}
-              alt={profile?.displayName}
-              className="w-24 h-24 rounded-full border-4 border-white shadow-lg"
+            <Avatar
+              src={user?.imageUrl || profile?.avatarUrl}
+              name={profile?.displayName || user?.fullName || ''}
+              size="xl"
             />
           </div>
           

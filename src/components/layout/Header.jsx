@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { UserButton, useUser } from '@clerk/clerk-react';
 import { Bell } from 'lucide-react';
 import api from '../../utils/api';
+import Avatar from '../ui/Avatar';
 
 export default function Header() {
   const { user } = useUser();
