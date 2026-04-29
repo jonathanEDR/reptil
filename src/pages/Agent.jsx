@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bot, Send, ChevronDown, ChevronRight, Wrench, Loader2, AlertCircle, Zap, Clock } from 'lucide-react';
+import { Bot, Send, ChevronDown, ChevronRight, Wrench, Loader2, AlertCircle, Zap, Clock, Plus } from 'lucide-react';
 import api from '../utils/api';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -149,14 +149,15 @@ function ThinkingBubble() {
 // ─── Agent page ───────────────────────────────────────────────────────────────
 
 export default function Agent() {
-  const [messages, setMessages]         = useState([]);
-  const [input, setInput]               = useState('');
-  const [loading, setLoading]           = useState(false);
-  const [models, setModels]             = useState([]);
-  const [selectedModel, setSelectedModel] = useState('');
-  const [sessionId]                     = useState(() => crypto.randomUUID());
-  const bottomRef                       = useRef(null);
-  const inputRef                        = useRef(null);
+  const [messages, setMessages]                   = useState([]);
+  const [conversationHistory, setConvHistory]     = useState([]);  // historial para el LLM
+  const [input, setInput]                         = useState('');
+  const [loading, setLoading]                     = useState(false);
+  const [models, setModels]                       = useState([]);
+  const [selectedModel, setSelectedModel]         = useState('');
+  const [sessionId]                               = useState(() => crypto.randomUUID());
+  const bottomRef                                 = useRef(null);
+  const inputRef                                  = useRef(null);
 
   // Cargar modelos disponibles
   useEffect(() => {
@@ -189,7 +190,8 @@ export default function Agent() {
       const { data } = await api.post('/agents/query', {
         query:     text,
         sessionId,
-        model:     selectedModel
+        model:     selectedModel,
+        history:   conversationHistory.slice(-20)  // últimos 10 turnos
       });
 
       setMessages(prev => [...prev, {
@@ -200,6 +202,13 @@ export default function Agent() {
         model:         data.model,
         totalDuration: data.totalDuration
       }]);
+
+      // Acumular historial para el próximo turno
+      setConvHistory(prev => [
+        ...prev,
+        { role: 'user',      content: text },
+        { role: 'assistant', content: data.response }
+      ]);
     } catch (err) {
       const errMsg = err.response?.data?.error || err.message || 'Error desconocido';
       setMessages(prev => [...prev, { role: 'error', content: errMsg }]);
@@ -213,6 +222,13 @@ export default function Agent() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
+  const resetConversation = () => {
+    setMessages([]);
+    setConvHistory([]);
+    setInput('');
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
   const examples = [
     '¿Cuántos productos tenemos en inventario?',
     'Muéstrame las categorías disponibles',
@@ -222,27 +238,41 @@ export default function Agent() {
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+      <div className="flex items-start justify-between mb-4 flex-shrink-0">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Agente IA</h1>
           <p className="text-gray-600 mt-1">Interactúa con tus aplicaciones en lenguaje natural</p>
         </div>
 
-        {/* Model selector */}
-        {models.length > 0 && (
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-500">Modelo:</label>
-            <select
-              value={selectedModel}
-              onChange={e => setSelectedModel(e.target.value)}
-              className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+        <div className="flex items-center gap-3">
+          {/* Botón nueva conversación — solo visible cuando hay mensajes */}
+          {messages.length > 0 && (
+            <button
+              onClick={resetConversation}
+              className="btn-secondary flex items-center gap-2 text-sm"
+              title="Iniciar una nueva conversación"
             >
-              {models.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
+              <Plus size={16} />
+              Nueva conversación
+            </button>
+          )}
+
+          {/* Model selector */}
+          {models.length > 0 && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-500">Modelo:</label>
+              <select
+                value={selectedModel}
+                onChange={e => setSelectedModel(e.target.value)}
+                className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                {models.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Chat area */}
