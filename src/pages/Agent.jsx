@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bot, Send, ChevronDown, ChevronRight, Wrench, Loader2, AlertCircle, Zap, Clock, Plus } from 'lucide-react';
+import { Bot, Send, ChevronDown, ChevronRight, Wrench, Loader2, AlertCircle, Zap, Clock, Plus, Plug } from 'lucide-react';
 import api from '../utils/api';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -8,6 +8,80 @@ function formatMs(ms) {
   if (!ms) return '';
   return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
 }
+
+// Genera una pregunta en lenguaje natural a partir del nombre/descripción de una herramienta
+function toolToSuggestion(toolName, description, connectorName) {
+  const raw  = toolName.replace(/_/g, ' ').toLowerCase();
+  const desc = (description || '').trim();
+
+  // Patrones de prefijo comunes → plantillas de pregunta
+  const patterns = [
+    [/^(listar?|list|obtener lista|get list)\s*/i,   (r) => `Lista ${r || 'los registros'} de ${connectorName}`],
+    [/^(buscar|busqueda|search|find)\s*/i,            (r) => `Busca ${r || 'un registro'} en ${connectorName}`],
+    [/^(obtener|get|consultar|fetch)\s*/i,            (r) => `Muéstrame ${r || 'los datos'} de ${connectorName}`],
+    [/^(crear|create|agregar|add|nuevo)\s*/i,         (r) => `¿Cómo creo ${r || 'un registro'} en ${connectorName}?`],
+    [/^(actualizar|update|editar|edit)\s*/i,          (r) => `Actualiza ${r || 'un registro'} en ${connectorName}`],
+    [/^(eliminar|delete|borrar|remove)\s*/i,          (r) => `¿Cuántos registros puedo eliminar en ${connectorName}?`],
+    [/^(resumen|summary|estadisticas|stats|total)\s*/i, () => `Dame un resumen de ${connectorName}`],
+    [/^(verificar|check|validar|validate)\s*/i,       (r) => `Verifica ${r || 'el estado'} en ${connectorName}`],
+  ];
+
+  for (const [regex, template] of patterns) {
+    const match = raw.match(regex);
+    if (match) {
+      const rest = raw.replace(regex, '').trim();
+      return template(rest);
+    }
+  }
+
+  // Si hay descripción corta, usarla directamente
+  if (desc && desc.length < 80) return desc;
+
+  // Fallback genérico
+  return `${raw.charAt(0).toUpperCase() + raw.slice(1)} en ${connectorName}`;
+}
+
+// Convierte conectores activos en sugerencias agrupadas
+function buildSuggestions(connectors) {
+  const result = [];
+
+  for (const connector of connectors) {
+    if (!connector.toolsCache?.length) continue;
+
+    // Tomar hasta 2 herramientas por conector (las más representativas)
+    const tools = connector.toolsCache.slice(0, 2);
+    for (const tool of tools) {
+      result.push({
+        text:          toolToSuggestion(tool.name, tool.description, connector.name),
+        connectorName: connector.name,
+        category:      connector.category || 'general',
+      });
+      if (result.length >= 6) break;  // máximo 6 sugerencias total
+    }
+    if (result.length >= 6) break;
+  }
+
+  return result;
+}
+
+// Color de badge por categoría del conector
+const CATEGORY_COLOR = {
+  inventory:     'bg-blue-100   text-blue-700',
+  payments:      'bg-green-100  text-green-700',
+  finance:       'bg-emerald-100 text-emerald-700',
+  crm:           'bg-purple-100 text-purple-700',
+  analytics:     'bg-orange-100 text-orange-700',
+  communication: 'bg-pink-100   text-pink-700',
+  other:         'bg-gray-100   text-gray-600',
+  general:       'bg-gray-100   text-gray-600',
+};
+
+// Sugerencias estáticas de respaldo
+const STATIC_EXAMPLES = [
+  '¿Cuántos productos tenemos en inventario?',
+  'Muéstrame las categorías disponibles',
+  'Lista los últimos productos del catálogo',
+];
 
 // ─── ToolCallCard ─────────────────────────────────────────────────────────────
 
@@ -155,11 +229,13 @@ export default function Agent() {
   const [loading, setLoading]                     = useState(false);
   const [models, setModels]                       = useState([]);
   const [selectedModel, setSelectedModel]         = useState('');
+  const [suggestions, setSuggestions]             = useState([]);   // sugerencias dinámicas
+  const [loadingSugg, setLoadingSugg]             = useState(true); // cargando sugerencias
   const [sessionId]                               = useState(() => crypto.randomUUID());
   const bottomRef                                 = useRef(null);
   const inputRef                                  = useRef(null);
 
-  // Cargar modelos disponibles
+  // Cargar modelos disponibles + sugerencias dinámicas en paralelo
   useEffect(() => {
     api.get('/agents/models')
       .then(r => {
@@ -171,6 +247,15 @@ export default function Agent() {
         setModels([{ id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' }]);
         setSelectedModel('gpt-4o');
       });
+
+    // Cargar conectores activos para generar sugerencias
+    api.get('/connectors', { params: { isActive: 'true', status: 'active' } })
+      .then(r => {
+        const dynamic = buildSuggestions(r.data.connectors || []);
+        setSuggestions(dynamic);
+      })
+      .catch(() => { /* silencioso — se usará el fallback */ })
+      .finally(() => setLoadingSugg(false));
   }, []);
 
   // Auto-scroll al último mensaje
@@ -229,12 +314,6 @@ export default function Agent() {
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
-  const examples = [
-    '¿Cuántos productos tenemos en inventario?',
-    'Muéstrame las categorías disponibles',
-    'Lista los últimos productos del catálogo',
-  ];
-
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       {/* Header */}
@@ -287,17 +366,46 @@ export default function Agent() {
             <p className="text-gray-500 text-sm mb-6 max-w-sm">
               Pregúntame sobre tus aplicaciones conectadas. Consultaré los datos en tiempo real.
             </p>
-            <div className="space-y-2 w-full max-w-sm">
-              {examples.map((ex, i) => (
-                <button
-                  key={i}
-                  onClick={() => { setInput(ex); inputRef.current?.focus(); }}
-                  className="w-full text-left text-sm px-4 py-2.5 rounded-xl border border-gray-200 bg-white hover:border-primary-400 hover:bg-primary-50 transition-colors text-gray-600"
-                >
-                  {ex}
-                </button>
-              ))}
-            </div>
+
+            {loadingSugg ? (
+              <div className="flex items-center gap-2 text-gray-400 text-sm">
+                <Loader2 size={14} className="animate-spin" />
+                Cargando sugerencias...
+              </div>
+            ) : suggestions.length > 0 ? (
+              /* ── Sugerencias dinámicas agrupadas ── */
+              <div className="space-y-2 w-full max-w-md">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { setInput(s.text); inputRef.current?.focus(); }}
+                    className="w-full flex items-center gap-3 text-left text-sm px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-primary-400 hover:bg-primary-50 transition-colors group"
+                  >
+                    <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${CATEGORY_COLOR[s.category] || CATEGORY_COLOR.general}`}>
+                      <Plug size={10} />
+                      {s.connectorName}
+                    </span>
+                    <span className="text-gray-600 group-hover:text-gray-900 flex-1">{s.text}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              /* ── Fallback estático ── */
+              <div className="space-y-2 w-full max-w-sm">
+                {STATIC_EXAMPLES.map((ex, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { setInput(ex); inputRef.current?.focus(); }}
+                    className="w-full text-left text-sm px-4 py-2.5 rounded-xl border border-gray-200 bg-white hover:border-primary-400 hover:bg-primary-50 transition-colors text-gray-600"
+                  >
+                    {ex}
+                  </button>
+                ))}
+                <p className="text-xs text-gray-400 pt-1">
+                  Conecta una aplicación MCP para ver sugerencias reales.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
