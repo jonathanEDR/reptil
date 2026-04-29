@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Plug, Bot, User, Settings } from 'lucide-react';
+import { LayoutDashboard, Plug, Bot, History, User, Settings } from 'lucide-react';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Conectores', href: '/connectors', icon: Plug },
-  { name: 'Agente IA', href: '/agent', icon: Bot },
-  { name: 'Mi Perfil', href: '/profile', icon: User },
+  { name: 'Dashboard',    href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Conectores',  href: '/connectors', icon: Plug },
+  { name: 'Agente IA',   href: '/agent',      icon: Bot },
+  { name: 'Historial',   href: '/history',    icon: History },
+  { name: 'Mi Perfil',   href: '/profile',    icon: User },
   { name: 'Configuración', href: '/settings', icon: Settings },
 ];
 

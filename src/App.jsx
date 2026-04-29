@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Connectors from './pages/Connectors';
 import ConnectorForm from './pages/ConnectorForm';
 import Agent from './pages/Agent';
+import History from './pages/History';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 
@@ -33,6 +34,7 @@ function App() {
           <Route path="connectors/new" element={<ConnectorForm />} />
           <Route path="connectors/:id/edit" element={<ConnectorForm />} />
           <Route path="agent" element={<Agent />} />
+          <Route path="history" element={<History />} />
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<Settings />} />
         </Route>
