@@ -345,8 +345,10 @@ export default function Agent() {
                 onChange={e => setSelectedModel(e.target.value)}
                 className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
-                {models.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
+                {models.map((m, i) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}{i === 0 ? ' ★' : ''}
+                  </option>
                 ))}
               </select>
             </div>
