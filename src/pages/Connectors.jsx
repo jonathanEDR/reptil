@@ -97,18 +97,18 @@ export default function Connectors() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Mis Conectores</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Mis Conectores</h1>
+          <p className="text-gray-500 text-sm mt-0.5">
             Gestiona tus conexiones a servidores MCP
           </p>
         </div>
         <button
           onClick={() => navigate('/connectors/new')}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex items-center gap-2 flex-shrink-0"
         >
-          <Plus size={20} />
+          <Plus size={18} />
           Nuevo Conector
         </button>
       </div>
@@ -137,9 +137,9 @@ export default function Connectors() {
           </button>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:gap-5 md:grid-cols-2 lg:grid-cols-3">
           {connectors.map((connector) => (
-            <div key={connector._id} className="card p-6">
+            <div key={connector._id} className="card p-4 sm:p-5">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
@@ -182,15 +182,15 @@ export default function Connectors() {
 
               {/* Herramientas descubiertas — lista compacta */}
               {connector.toolsCache?.length > 0 && (
-                <div className="mb-3 p-2 bg-gray-50 rounded-lg max-h-24 overflow-y-auto">
-                  {connector.toolsCache.slice(0, 5).map(tool => (
+                <div className="mb-3 p-2 bg-gray-50 rounded-lg">
+                  {connector.toolsCache.slice(0, 4).map(tool => (
                     <div key={tool.name} className="flex items-center gap-1 py-0.5">
-                      <Wrench size={12} className="text-gray-400 flex-shrink-0" />
+                      <Wrench size={11} className="text-gray-400 flex-shrink-0" />
                       <span className="text-xs text-gray-600 truncate" title={tool.description}>{tool.name}</span>
                     </div>
                   ))}
-                  {connector.toolsCache.length > 5 && (
-                    <span className="text-xs text-gray-400">+{connector.toolsCache.length - 5} más...</span>
+                  {connector.toolsCache.length > 4 && (
+                    <span className="text-xs text-gray-400 pl-4">+{connector.toolsCache.length - 4} más</span>
                   )}
                 </div>
               )}

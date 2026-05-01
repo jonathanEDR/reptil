@@ -70,7 +70,7 @@ export default function Profile() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-gray-900">Mi Perfil</h1>
         {!editing && (
           <button
@@ -84,16 +84,17 @@ export default function Profile() {
 
       {/* Información del Usuario */}
       <div className="card p-6">
-        <div className="flex items-start space-x-6">
-          <div className="flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-start gap-5">
+          <div className="flex-shrink-0 self-center sm:self-start">
             <Avatar
               src={user?.imageUrl || profile?.avatarUrl}
               name={profile?.displayName || user?.fullName || ''}
-              size="xl"
+              size="lg"
+              className="sm:!w-24 sm:!h-24"
             />
           </div>
           
-          <div className="flex-1">
+          <div className="flex-1 min-w-0 w-full">
             {editing ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -157,7 +158,7 @@ export default function Profile() {
                   </label>
                 </div>
 
-                <div className="flex space-x-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button type="submit" className="btn-primary">
                     Guardar Cambios
                   </button>
@@ -183,31 +184,28 @@ export default function Profile() {
                 </h2>
                 <p className="text-gray-600">{profile?.email}</p>
                 
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center text-sm">
-                    <span className="font-medium text-gray-700 w-32">Plan:</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                <div className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+                  <span className="font-medium text-gray-500">Plan</span>
+                  <span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                       profile?.plan === 'enterprise' ? 'bg-purple-100 text-purple-800' :
                       profile?.plan === 'pro' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
+                      'bg-gray-100 text-gray-700'
                     }`}>
                       {profile?.plan.toUpperCase()}
                     </span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <span className="font-medium text-gray-700 w-32">Zona horaria:</span>
-                    <span className="text-gray-900">{profile?.settings.timezone}</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <span className="font-medium text-gray-700 w-32">Idioma:</span>
-                    <span className="text-gray-900">{profile?.settings.language === 'es' ? 'Español' : 'English'}</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <span className="font-medium text-gray-700 w-32">Último acceso:</span>
-                    <span className="text-gray-900">
-                      {new Date(profile?.lastLogin).toLocaleString()}
-                    </span>
-                  </div>
+                  </span>
+
+                  <span className="font-medium text-gray-500">Zona horaria</span>
+                  <span className="text-gray-900 truncate">{profile?.settings.timezone}</span>
+
+                  <span className="font-medium text-gray-500">Idioma</span>
+                  <span className="text-gray-900">{profile?.settings.language === 'es' ? 'Español' : 'English'}</span>
+
+                  <span className="font-medium text-gray-500">Último acceso</span>
+                  <span className="text-gray-900 break-words">
+                    {new Date(profile?.lastLogin).toLocaleString()}
+                  </span>
                 </div>
               </div>
             )}
@@ -220,36 +218,35 @@ export default function Profile() {
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Estadísticas de Uso</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <div className="text-sm text-gray-600 mb-1">Conectores</div>
-              <div className="text-3xl font-bold text-primary-600">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-gray-50 rounded-xl p-3 text-center">
+              <div className="text-xs text-gray-500 mb-1 truncate">Conectores</div>
+              <div className="text-2xl font-bold text-primary-600 leading-tight">
                 {stats.connectors.total}
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-[11px] text-gray-400 mt-0.5">
                 {stats.connectors.active} activos
               </div>
             </div>
 
-            <div>
-              <div className="text-sm text-gray-600 mb-1">Ejecuciones Totales</div>
-              <div className="text-3xl font-bold text-green-600">
+            <div className="bg-gray-50 rounded-xl p-3 text-center">
+              <div className="text-xs text-gray-500 mb-1 truncate">Ejecuciones</div>
+              <div className="text-2xl font-bold text-green-600 leading-tight">
                 {stats.executions.total}
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-[11px] text-gray-400 mt-0.5">
                 {stats.executions.thisMonth} este mes
               </div>
             </div>
 
-            <div>
-              <div className="text-sm text-gray-600 mb-1">Tasa de Éxito</div>
-              <div className="text-3xl font-bold text-blue-600">
-                {stats.executions.total > 0 
+            <div className="bg-gray-50 rounded-xl p-3 text-center">
+              <div className="text-xs text-gray-500 mb-1 truncate">Tasa Éxito</div>
+              <div className="text-2xl font-bold text-blue-600 leading-tight">
+                {stats.executions.total > 0
                   ? Math.round((stats.executions.successful / stats.executions.total) * 100)
-                  : 0
-                }%
+                  : 0}%
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-[11px] text-gray-400 mt-0.5">
                 {stats.executions.successful} exitosas
               </div>
             </div>

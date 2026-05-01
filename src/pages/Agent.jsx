@@ -315,35 +315,36 @@ export default function Agent() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col h-[calc(100dvh-5rem)] md:h-[calc(100dvh-3rem)]">
       {/* Header */}
-      <div className="flex items-start justify-between mb-4 flex-shrink-0">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Agente IA</h1>
-          <p className="text-gray-600 mt-1">Interactúa con tus aplicaciones en lenguaje natural</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 flex-shrink-0">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">Agente IA</h1>
+          <p className="text-gray-500 text-sm mt-0.5 hidden sm:block">Interactúa con tus aplicaciones en lenguaje natural</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {/* Botón nueva conversación — solo visible cuando hay mensajes */}
           {messages.length > 0 && (
             <button
               onClick={resetConversation}
-              className="btn-secondary flex items-center gap-2 text-sm"
+              className="btn-secondary flex items-center gap-1.5 text-sm px-3 py-1.5"
               title="Iniciar una nueva conversación"
             >
-              <Plus size={16} />
-              Nueva conversación
+              <Plus size={15} />
+              <span className="hidden sm:inline">Nueva conversación</span>
+              <span className="sm:hidden">Nueva</span>
             </button>
           )}
 
           {/* Model selector */}
           {models.length > 0 && (
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-500">Modelo:</label>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-gray-500 hidden sm:block">Modelo:</label>
               <select
                 value={selectedModel}
                 onChange={e => setSelectedModel(e.target.value)}
-                className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="text-xs sm:text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 max-w-[140px] sm:max-w-none"
               >
                 {models.map((m, i) => (
                   <option key={m.id} value={m.id}>
@@ -376,18 +377,18 @@ export default function Agent() {
               </div>
             ) : suggestions.length > 0 ? (
               /* ── Sugerencias dinámicas agrupadas ── */
-              <div className="space-y-2 w-full max-w-md">
+              <div className="space-y-2 w-full max-w-full sm:max-w-md">
                 {suggestions.map((s, i) => (
                   <button
                     key={i}
                     onClick={() => { setInput(s.text); inputRef.current?.focus(); }}
-                    className="w-full flex items-center gap-3 text-left text-sm px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-primary-400 hover:bg-primary-50 transition-colors group"
+                    className="w-full flex items-center gap-2 text-left text-sm px-3 py-2.5 rounded-xl border border-gray-200 bg-white hover:border-primary-400 hover:bg-primary-50 transition-colors group"
                   >
-                    <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${CATEGORY_COLOR[s.category] || CATEGORY_COLOR.general}`}>
-                      <Plug size={10} />
-                      {s.connectorName}
+                    <span className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${CATEGORY_COLOR[s.category] || CATEGORY_COLOR.general}`}>
+                      <Plug size={9} />
+                      <span className="max-w-[80px] truncate">{s.connectorName}</span>
                     </span>
-                    <span className="text-gray-600 group-hover:text-gray-900 flex-1">{s.text}</span>
+                    <span className="text-gray-600 group-hover:text-gray-900 flex-1 min-w-0 truncate">{s.text}</span>
                   </button>
                 ))}
               </div>
@@ -431,7 +432,7 @@ export default function Agent() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
-            placeholder="Escribe tu consulta... (Enter para enviar)"
+            placeholder="Escribe tu consulta..."
             disabled={loading || !selectedModel}
             className="flex-1 resize-none bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none max-h-32 leading-relaxed disabled:opacity-50"
             style={{ minHeight: '24px' }}

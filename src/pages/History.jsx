@@ -133,6 +133,79 @@ function ExecutionRow({ exec }) {
   );
 }
 
+/* ─── Tarjeta móvil ───────────────────────────────────── */
+function ExecutionCard({ exec }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="border-b border-gray-100 last:border-0 p-4">
+      {/* Cabecera */}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <p className={`text-sm text-gray-900 flex-1 ${open ? '' : 'line-clamp-2'}`}>
+          {exec.query}
+        </p>
+        <div className="shrink-0"><StatusBadge status={exec.status} /></div>
+      </div>
+
+      {/* Metadatos */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
+        <span>{formatDate(exec.createdAt)}</span>
+        {exec.metadata?.modelUsed && (
+          <span className="font-mono bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+            {exec.metadata.modelUsed}
+          </span>
+        )}
+        <span className="flex items-center gap-1"><Timer size={10} />{formatDuration(exec.totalDuration)}</span>
+        <span className="flex items-center gap-1"><Zap size={10} />{exec.tokensUsed?.total ?? '—'} tok.</span>
+        {exec.toolsCalled?.length > 0 && <span>{exec.toolsCalled.length} herr.</span>}
+      </div>
+
+      {/* Botón expandir */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="mt-2 text-xs text-primary-600 flex items-center gap-1"
+      >
+        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        {open ? 'Ocultar detalle' : 'Ver detalle'}
+      </button>
+
+      {/* Detalle expandido */}
+      {open && (
+        <div className="mt-3 space-y-3">
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Respuesta</p>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap max-h-40 overflow-y-auto">
+              {exec.response || '(sin respuesta)'}
+            </div>
+          </div>
+          {exec.toolsCalled?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase mb-1">
+                Herramientas ({exec.toolsCalled.length})
+              </p>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {exec.toolsCalled.map((t, i) => (
+                  <div key={i} className="flex items-center justify-between bg-white border border-gray-200 rounded px-3 py-2 text-xs">
+                    <span className="font-medium text-gray-800 truncate">
+                      {t.connectorName ? `${t.connectorName} › ` : ''}{t.toolName}
+                    </span>
+                    <span className="flex items-center gap-2 shrink-0 ml-2">
+                      {t.success
+                        ? <CheckCircle2 size={12} className="text-green-500" />
+                        : <XCircle size={12} className="text-red-500" />}
+                      <span className="text-gray-400">{formatDuration(t.duration)}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Modal de filtros ─────────────────────────────────── */
 function FilterModal({ filters, onChange, onClose }) {
   const [local, setLocal] = useState(filters);
@@ -252,7 +325,7 @@ export default function History() {
       {/* Cabecera */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Historial</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Historial</h1>
           <p className="text-gray-500 mt-1">
             {pagination.total} ejecuciones registradas
           </p>
@@ -307,37 +380,45 @@ export default function History() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Consulta</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Modelo</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Duración</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Tokens</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Herr.</th>
-                  <th className="px-4 py-3 w-8" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {executions.map(exec => (
-                  <ExecutionRow key={exec._id} exec={exec} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* Tarjetas — móvil */}
+            <div className="block md:hidden">
+              {executions.map(exec => (
+                <ExecutionCard key={exec._id} exec={exec} />
+              ))}
+            </div>
+            {/* Tabla — escritorio */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Consulta</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Modelo</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Duración</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Tokens</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase text-right">Herr.</th>
+                    <th className="px-4 py-3 w-8" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {executions.map(exec => (
+                    <ExecutionRow key={exec._id} exec={exec} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
       {/* Paginación */}
       {!loading && pagination.pages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-gray-500">
-            Página {pagination.page} de {pagination.pages}
-            {' '}·{' '}
-            mostrando {executions.length} de {pagination.total}
+            <span className="hidden sm:inline">Página {pagination.page} de {pagination.pages} · mostrando {executions.length} de {pagination.total}</span>
+            <span className="sm:hidden">{pagination.page}/{pagination.pages}</span>
           </p>
           <div className="flex gap-2">
             <button

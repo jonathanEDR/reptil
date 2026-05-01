@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 import {
-  Activity, Plug, Zap, TrendingUp, CheckCircle2, XCircle,
-  Clock, Bot, Wrench, ChevronRight, BarChart3
+  Activity, Plug, Zap, TrendingUp,
+  Wrench, ChevronRight, BarChart3
 } from 'lucide-react';
 import api from '../utils/api';
 
@@ -32,7 +32,7 @@ function ActivityChart({ data }) {
 // ─── Stat card ───────────────────────────────────────────────────────────────
 function StatCard({ name, value, description, icon: Icon, color, trend }) {
   return (
-    <div className="card p-6">
+    <div className="card p-4 sm:p-5">
       <div className="flex items-center justify-between">
         <div className="min-w-0 flex-1">
           <p className="text-sm text-gray-500 truncate">{name}</p>
@@ -48,38 +48,6 @@ function StatCard({ name, value, description, icon: Icon, color, trend }) {
           {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}% vs. mes anterior
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── Execution row ────────────────────────────────────────────────────────────
-function ExecutionRow({ exec }) {
-  const ok = exec.status === 'completed';
-  const time = new Date(exec.createdAt).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
-  const date = new Date(exec.createdAt).toLocaleDateString('es', { day: 'numeric', month: 'short' });
-
-  return (
-    <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
-      <div className={`mt-0.5 flex-shrink-0 ${ok ? 'text-green-500' : 'text-red-400'}`}>
-        {ok ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-800 truncate">{exec.query}</p>
-        <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
-          <span className="flex items-center gap-1">
-            <Bot size={10} /> {exec.metadata?.modelUsed || exec.agentType}
-          </span>
-          {exec.totalDuration && (
-            <span className="flex items-center gap-1">
-              <Clock size={10} /> {exec.totalDuration >= 1000 ? `${(exec.totalDuration / 1000).toFixed(1)}s` : `${exec.totalDuration}ms`}
-            </span>
-          )}
-          {exec.tokensUsed?.total > 0 && (
-            <span>{exec.tokensUsed.total.toLocaleString()} tokens</span>
-          )}
-        </div>
-      </div>
-      <span className="text-[11px] text-gray-400 flex-shrink-0">{date} {time}</span>
     </div>
   );
 }
@@ -177,22 +145,22 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
           Hola, {user?.firstName || 'Usuario'} 👋
         </h1>
-        <p className="text-gray-500 mt-1">Panel de control de tu plataforma MCP</p>
+        <p className="text-gray-500 text-sm mt-0.5">Panel de control de tu plataforma MCP</p>
       </div>
 
       {/* Stat cards */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {statCards.map(c => <StatCard key={c.name} {...c} />)}
       </div>
 
       {/* Fila: Chart + Top tools */}
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 
         {/* Actividad últimos 7 días */}
-        <div className="lg:col-span-2 card p-6">
+        <div className="md:col-span-1 lg:col-span-2 card p-4 sm:p-5">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-base font-semibold text-gray-900">Actividad reciente</h2>
@@ -211,7 +179,7 @@ export default function Dashboard() {
         </div>
 
         {/* Top tools */}
-        <div className="card p-6">
+        <div className="card p-4 sm:p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-gray-900">Top herramientas</h2>
             <Wrench size={16} className="text-gray-300" />
@@ -241,33 +209,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Fila: Ejecuciones recientes + Plan */}
-      <div className="grid gap-5 lg:grid-cols-3">
-
-        {/* Ejecuciones recientes */}
-        <div className="lg:col-span-2 card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-gray-900">Últimas consultas</h2>
-            <Link to="/agent" className="text-xs text-primary-600 hover:underline flex items-center gap-1">
-              Ir al agente <ChevronRight size={12} />
-            </Link>
-          </div>
-          {stats?.recentExecutions?.length > 0 ? (
-            <div>
-              {stats.recentExecutions.map((exec, i) => (
-                <ExecutionRow key={i} exec={exec} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-28 text-gray-400 text-sm text-center">
-              <Bot size={24} className="mb-2 opacity-30" />
-              Tus consultas al agente aparecerán aquí
-            </div>
-          )}
-        </div>
-
-        {/* Plan y límites */}
-        <div className="card p-6">
+      {/* Plan y límites */}
+      <div className="grid gap-4">
+        <div className="card p-4 sm:p-5">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-base font-semibold text-gray-900">
               Plan <span className="uppercase text-primary-600">{stats?.plan}</span>
